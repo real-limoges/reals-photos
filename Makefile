@@ -5,9 +5,9 @@ build:
 	sbcl --script build.lisp
 
 # Build, then serve locally so relative paths behave exactly as when deployed.
-# Ruby's stdlib httpd (WEBrick), site/ as docroot. Needs: gem install webrick
+# serve.lisp is a small static server on SBCL's bundled sockets, site/ as docroot.
 serve: build
-	ruby -run -e httpd site --port 7000
+	sbcl --script serve.lisp 7000
 
 # Drop the generated site (previews included); fully reproducible from a build.
 clean:
