@@ -1,0 +1,91 @@
+# base.pp3 --- the house look, rebuilt for RawTherapee 5.13.
+#
+# Derived from the 25 Adobe Camera Raw sidecars in ~/Documents/Lightroom Photos
+# that carry real adjustments.  See docs/reference/source-photographs.md for the
+# inventory and the field-by-field distribution.
+#
+# The ACR numbers are NOT portable as numbers: ProcessVersion 15.4's Highlights
+# and Shadows are Adobe's local tone mapping, and RawTherapee's Shadows &
+# Highlights is a different algorithm.  What carries over is the description --
+# open the range at both ends, then put contrast and vibrance back -- and the
+# values below are that description translated, then adjusted by eye.
+#
+# Layer per-frame overrides on top rather than editing this file:
+#
+#   rawtherapee-cli -p style/base.pp3 -p style/frames/DSC02535.pp3 ...
+#
+# Only the keys this look actually changes are listed.  RawTherapee fills in
+# every other key from its own defaults.
+
+[Version]
+AppVersion=5.13
+Version=353
+
+# As Shot, on all 25 sidecars.  White balance was never touched, so there is no
+# per-frame white balance work to recover.  "Camera" is RawTherapee's As Shot.
+[White Balance]
+Enabled=true
+Setting=Camera
+
+# ACR median: Exposure +0.22, Contrast +7.  The exposure figure says these were
+# consistently shot a fifth of a stop under; it is also the first thing worth
+# overriding per frame, since the middle 50% spans -0.23 to +0.34.
+#
+# The tone curve carries ACR's Whites +38 and Blacks -30, which have no slider
+# equivalent in RawTherapee.  The point at (0.045, 0) is the black point and the
+# point at (0.90, 1) is the white point, so the curve is a levels stretch with
+# soft shoulders.  Without it the look is visibly milky: Shadows & Highlights
+# opens the range up and nothing puts an anchor back at either end.
+#
+# FilmLike is RawTherapee's film-style curve application.  It compresses toward
+# white instead of clipping channels independently, which keeps saturated
+# highlights from shifting hue.
+[Exposure]
+Auto=false
+Compensation=0.20
+Contrast=7
+Saturation=0
+Black=0
+HighlightCompr=0
+HighlightComprThreshold=0
+CurveMode=FilmLike
+Curve=3;0;0;0.045;0;0.90;1;1;1;
+
+# The core of the look.  ACR medians were Highlights -56 and Shadows +45; note
+# the sign flip, since RawTherapee's Highlights slider is 0..100 where larger
+# means more recovery.  Tonal widths and radius are RawTherapee defaults.
+[Shadows & Highlights]
+Enabled=true
+Highlights=56
+HighlightTonalWidth=70
+Shadows=45
+ShadowTonalWidth=30
+Radius=40
+Lab=false
+
+# ACR Vibrance median +15, and Saturation sat at 0.  ACR's Vibrance protects
+# already-saturated colors, which is what RawTherapee calls Pastels.
+[Vibrance]
+Enabled=true
+Pastels=15
+Saturated=0
+ProtectSkins=false
+AvoidColorShift=true
+PastSatTog=true
+
+# Off, deliberately, and this departs from the sidecars.  ACR applied capture
+# sharpening at 40 / radius 1 / detail 25 / masking 0, but decision 0004 puts
+# all sharpening after the resize, where vips can apply it at the display size.
+# Sharpening a 6000px master that then gets downscaled to at most 2400px buys
+# halos rather than detail.
+[Sharpening]
+Enabled=false
+
+[PostResizeSharpening]
+Enabled=false
+
+# Decision 0004 requires sRGB out.  This is already RawTherapee's default; it is
+# stated explicitly because the build depends on it and a silent default is a
+# bad thing to depend on.
+[Color Management]
+OutputProfile=RTv4_sRGB

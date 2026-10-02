@@ -1,0 +1,24 @@
+
+# macOS Finder metadata, dropped into any directory it touches
+.DS_Store
+
+# Playwright MCP scratch (snapshots, console logs) from browser previews
+.playwright-mcp/
+
+# working notes and drafts; see docs/private-notes/README.md
+docs/
+docs/private-notes/
+
+# selected camera raws, split into main/ and antarctica/; the generator reads
+# these directly. Many GB and backed up elsewhere, so never committed.
+raw/
+
+# hand-developed full-size exports; the build's input, per decisions/0002 and
+# 0004.  Multiple GB, and reproducible only from the raws plus the developing
+# pass, so they live here for convenience and are backed up elsewhere.
+exports/
+
+# generated site: HTML plus the 800/1200/2400 derivative ladder.  Whether the
+# derivatives stay ignored is Q2 and still open; if they get committed, drop
+# this line and keep the directory.
+site/

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Real's Photographs">
+  <!-- Spare landscape mark in the site palette: warm paper, two peaks, a muted sun.
+       Kept blunt and high-contrast so it survives 16px. -->
+  <defs>
+    <clipPath id="frame"><rect width="32" height="32" rx="7"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="32" height="32" fill="#f6f4ef"/>
+    <circle cx="24" cy="9" r="3" fill="#8a857c"/>
+    <path d="M12 27 L22 12 L32 27 Z" fill="#857f74"/>
+    <path d="M0 27 L11 15 L21 27 Z" fill="#2b2b2b"/>
+  </g>
+</svg>
