@@ -1,0 +1,27 @@
+# IMG_3324.pp3 --- per-frame override, layered over style/base.pp3.
+#
+# Translated from the Adobe Camera Raw sidecar
+#   ~/Documents/Photos/RAW/2019/2019 - Southern Africa/untitled folder 1/IMG_3324.xmp
+# matched to raw/ by capture time. Sliders map one to one, as in base.pp3
+# (Highlights flips sign). Not carried over: Whites +50 / Blacks -21 (base curve kept).
+
+[Exposure]
+Compensation=0.21
+Contrast=6
+Saturation=-2
+
+[Shadows & Highlights]
+Highlights=59
+Shadows=41
+
+[Vibrance]
+Pastels=15
+
+[Crop]
+Enabled=true
+X=850
+Y=66
+W=4573
+H=3596
+FixedRatio=false
+Guide=Frame

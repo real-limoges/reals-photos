@@ -1,0 +1,10 @@
+# DSC_0641.pp3 --- per-frame override, layered over style/base.pp3.
+#
+# Translated from the Adobe Camera Raw sidecar
+#   ~/Documents/Photos/RAW/_from_lightroom/DSC_0641.xmp
+# matched to raw/ by capture time. Sliders map one to one, as in base.pp3
+# (Highlights flips sign). Everything it set is carried over.
+
+[Black & White]
+Enabled=true
+Method=Desaturation

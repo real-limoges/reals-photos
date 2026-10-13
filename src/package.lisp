@@ -2,4 +2,4 @@
 
 (defpackage #:reals-photos
   (:use #:cl)
-  (:export #:main #:build))
+  (:export #:main #:build #:develop-all))

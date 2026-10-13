@@ -1,0 +1,22 @@
+# DSC02450.pp3 --- per-frame override, layered over style/base.pp3.
+#
+# Translated from the Adobe Camera Raw sidecar
+#   ~/Documents/Photos/RAW/_from_lightroom/DSC02450.xmp
+# matched to raw/ by capture time. Sliders map one to one, as in base.pp3
+# (Highlights flips sign). Not carried over: 13 retouch spots; camera profile 'Matrix'; Whites +50 / Blacks -50 (base curve kept).
+
+[Exposure]
+Compensation=0.42
+Contrast=7
+Saturation=8
+
+[Shadows & Highlights]
+Highlights=49
+Shadows=50
+
+[Vibrance]
+Pastels=20
+
+[Dehaze]
+Enabled=true
+Strength=19
