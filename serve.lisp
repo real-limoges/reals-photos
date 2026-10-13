@@ -17,7 +17,7 @@
 
 (defparameter *port*
   (let ((arg (second sb-ext:*posix-argv*)))
-    (if arg (parse-integer arg) 7000)))
+    (if arg (parse-integer arg) 7341)))
 
 (defparameter *content-types*
   '(("html"  . "text/html; charset=utf-8")

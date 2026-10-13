@@ -1,5 +1,5 @@
 ;;;; generator.lisp --- Gym, Tan, Laundry a static site
-;;;; (read the manifest, render previews, emit the site)
+;;;; (read the manifest, develop raws, render previews, emit the site)
 
 (in-package #:reals-photos)
 
@@ -8,6 +8,23 @@
 (defparameter *star-dir*
   (merge-pathnames "raw/" *default-pathname-defaults*)
   "Where the selected sources live, split into main/ and antarctica/.")
+
+(defparameter *developed-dir*
+  (merge-pathnames "developed/" *default-pathname-defaults*)
+  "Full-size developed JPEGs, one per raw, split by page like raw/. A cache
+   between raw/ and the preview ladder; regenerated, safe to delete.")
+
+(defparameter *base-profile*
+  (merge-pathnames "style/base.pp3" *default-pathname-defaults*)
+  "The house look, applied to every raw.")
+
+(defparameter *frames-dir*
+  (merge-pathnames "style/frames/" *default-pathname-defaults*)
+  "Optional per-frame overrides, style/frames/<stem>.pp3, layered over the base.")
+
+(defparameter *raw-types* '("arw" "cr2" "cr3" "nef" "orf" "raf" "dng" "rw2")
+  "Extensions RawTherapee develops. Anything else (HEIF, JPEG) was already
+   processed in camera and goes straight to the preview ladder.")
 
 (defparameter *site-dir*
   (merge-pathnames "site/" *default-pathname-defaults*)
@@ -210,17 +227,103 @@ figure img {
            :directory (append (pathname-directory *star-dir*)
                               (list (string-downcase (symbol-name page))))))))
 
+;;; freshness
+
+(defun fresh-p (out inputs)
+  "True when OUT exists and is at least as new as every file in INPUTS.
+   A NIL in INPUTS (an absent frame profile, say) is skipped."
+  (and (probe-file out)
+       (every (lambda (in) (>= (file-write-date out) (file-write-date in)))
+              (remove nil inputs))))
+
+;;; develop
+
+(defun raw-p (src)
+  (member (string-downcase (pathname-type src)) *raw-types* :test #'string=))
+
+(defun frame-profile (stem)
+  "style/frames/<stem>.pp3 if it exists, or NIL."
+  (probe-file (merge-pathnames (format nil "~a.pp3" stem) *frames-dir*)))
+
+(defun developed-path (page stem)
+  (merge-pathnames (format nil "~(~a~)/~a.jpg" page stem) *developed-dir*))
+
+(defun develop (src page stem)
+  "Develop raw SRC with the base profile plus any frame override, into
+   developed/. Returns :developed, :cached or :failed. Redevelops when the raw
+   or either profile is newer than the output. Deleting a frame profile leaves
+   nothing newer behind, so delete developed/<page>/<stem>.jpg along with it."
+  (let ((out (developed-path page stem))
+        (frame (frame-profile stem)))
+    (cond
+      ((fresh-p out (list src *base-profile* frame)) :cached)
+      (t (ensure-directories-exist out)
+         (when (probe-file out) (delete-file out))
+         ;; rawtherapee-cli wants absolute paths, takes -c last, and exits 0 even
+         ;; when it skips a file, so success is judged by the output existing.
+         (sb-ext:run-program
+          "rawtherapee-cli"
+          (append (list "-q" "-Y" "-p" (namestring *base-profile*))
+                  (when frame (list "-p" (namestring frame)))
+                  (list "-j95" "-js3" "-o" (namestring out)
+                        "-c" (namestring src)))
+          :search t :output nil :error nil)
+         (if (probe-file out)
+             :developed
+             (progn (format t "  !! rawtherapee failed: ~a~%" stem) :failed))))))
+
+(defun page-stems (page)
+  "Every stem PAGE references, once each, in order."
+  (remove-duplicates (mapcan #'row-stems (page-rows page))
+                     :test #'string= :from-end t))
+
+(defun develop-page (page)
+  "Develop every raw on PAGE. Non-raw sources (HEIF) need no developing.
+   Returns (developed cached failed missing)."
+  (let ((developed 0) (cached 0) (failed '()) (missing '()))
+    (dolist (stem (page-stems page))
+      (let ((src (source-for (page-name page) stem)))
+        (cond
+          ((null src) (push stem missing))
+          ((raw-p src)
+           (ecase (develop src (page-name page) stem)
+             (:developed (incf developed))
+             (:cached    (incf cached))
+             (:failed    (push stem failed)))))))
+    (list developed cached (nreverse failed) (nreverse missing))))
+
+(defun develop-all ()
+  "Develop every raw the manifest references. The build reads the results."
+  (let ((pages (rest (read-manifest))))
+    (format t "~&Developing raws from ~a~%" (namestring *star-dir*))
+    (dolist (page pages)
+      (destructuring-bind (developed cached failed missing) (develop-page page)
+        (format t "  ~10a  ~d developed, ~d cached~@[, FAILED: ~{~a~^ ~}~]~@[, MISSING sources: ~{~a~^ ~}~]~%"
+                (string-downcase (symbol-name (page-name page)))
+                developed cached failed missing)))
+    (values)))
+
+(defun preview-source (page stem)
+  "What the preview ladder reads for STEM: the developed JPEG for a raw, the
+   original for anything already processed in camera. NIL if neither exists."
+  (let ((src (source-for page stem)))
+    (cond
+      ((null src) nil)
+      ((raw-p src) (probe-file (developed-path page stem)))
+      (t src))))
+
 ;;; preview render
 
 (defun preview-path (stem width)
   (merge-pathnames (format nil "img/~a-~d.jpg" stem width) *site-dir*))
 
 (defun render-preview (src stem width)
-  "Shell out to sips to make a preview rung. Its lazy and skips work already done."
+  "Shell out to sips to make a preview rung. Its lazy and skips work already
+   done, unless SRC is newer than the rung (a redevelop, say)."
   (let ((out (preview-path stem width)))
     (ensure-directories-exist out)
     (cond
-      ((probe-file out) :cached)
+      ((fresh-p out (list src)) :cached)
       (t (let ((proc (sb-ext:run-program
                       "sips"
                       (list "-Z" (princ-to-string width)
@@ -229,9 +332,24 @@ figure img {
                             (namestring src)
                             "--out" (namestring out))
                       :search t :output nil :error *error-output*)))
-           (if (zerop (sb-ext:process-exit-code proc))
-               :rendered
-               (progn (format t "  !! sips failed: ~a @ ~d~%" stem width) :failed)))))))
+           (cond
+             ((not (zerop (sb-ext:process-exit-code proc)))
+              (format t "  !! sips failed: ~a @ ~d~%" stem width) :failed)
+             ((not (strip-gps out))
+              (delete-file out)
+              (format t "  !! exiftool failed: ~a @ ~d~%" stem width) :failed)
+             (t :rendered)))))))
+
+(defun strip-gps (path)
+  "Remove every GPS tag from PATH in place. Rungs are what get published, and
+   coordinates on travel photos disclose where they were taken. sips carries
+   EXIF through, and an in-camera HEIF from a phone has coordinates in it.
+   True on success."
+  (zerop (sb-ext:process-exit-code
+          (sb-ext:run-program "exiftool"
+                              (list "-q" "-overwrite_original" "-gps:all="
+                                    (namestring path))
+                              :search t :output nil :error *error-output*))))
 
 (defun row-widths (row)
   "The srcset rungs to render for ROW: bleed rows get the wider ladder."
@@ -245,10 +363,12 @@ figure img {
                     collect (cons stem widths))))
 
 (defun ensure-previews (page)
-  "Render every rung for every stem on PAGE. Returns (rendered cached missing)."
+  "Render every rung for every stem on PAGE from its preview source.
+   Returns (rendered cached missing); a raw that has not been developed yet
+   counts as missing."
   (let ((rendered 0) (cached 0) (missing '()))
     (loop for (stem . widths) in (page-stem-widths page)
-          for src = (source-for (page-name page) stem)
+          for src = (preview-source (page-name page) stem)
           if (null src)
             do (pushnew stem missing :test #'string=)
           else
@@ -385,7 +505,8 @@ figure img {
     path))
 
 (defun build ()
-  "Read the manifest, render any missing previews, emit the pages. (Gym, Tan, Laundry)"
+  "Read the manifest, render any missing previews from developed/, emit the
+   pages. (Gym, Tan, Laundry) Developing is its own step: see DEVELOP-ALL."
   (let* ((site (read-manifest))
          (pages (rest site)))
     (format t "~&Building ~d page(s) from ~a~%" (length pages) (namestring *manifest*))
@@ -394,13 +515,13 @@ figure img {
     (format t "  favicon     site/favicon.svg~%")
     (dolist (page pages)
       (destructuring-bind (rendered cached missing) (ensure-previews page)
-        (format t "  ~10a  previews: ~d rendered, ~d cached~@[, MISSING sources: ~{~a~^ ~}~]~%"
+        (format t "  ~10a  previews: ~d rendered, ~d cached~@[, MISSING (run make develop?): ~{~a~^ ~}~]~%"
                 (string-downcase (symbol-name (page-name page)))
                 rendered cached missing))
       (let ((path (write-page page pages)))
         (format t "  ~10a  -> ~a (~d rows)~%"
                 "" (namestring path) (length (page-rows page)))))
-    (format t "Done. Open ~ain a browser.~%"
+    (format t "Done. Open ~a in a browser.~%"
             (namestring (merge-pathnames "main.html" *site-dir*)))
     (values)))
 

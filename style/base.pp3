@@ -1,8 +1,8 @@
 # base.pp3 --- the house look, rebuilt for RawTherapee 5.13.
 #
-# Derived from the 25 Adobe Camera Raw sidecars in ~/Documents/Lightroom Photos
-# that carry real adjustments.  See docs/reference/source-photographs.md for the
-# inventory and the field-by-field distribution.
+# Derived from the medians of the Adobe Camera Raw sidecars that carry real
+# adjustments (they now live under ~/Documents/Photos/RAW/, mostly in
+# _from_lightroom/).
 #
 # The ACR numbers are NOT portable as numbers: ProcessVersion 15.4's Highlights
 # and Shadows are Adobe's local tone mapping, and RawTherapee's Shadows &
@@ -74,8 +74,8 @@ AvoidColorShift=true
 PastSatTog=true
 
 # Off, deliberately, and this departs from the sidecars.  ACR applied capture
-# sharpening at 40 / radius 1 / detail 25 / masking 0, but decision 0004 puts
-# all sharpening after the resize, where vips can apply it at the display size.
+# sharpening at 40 / radius 1 / detail 25 / masking 0, but sharpening belongs
+# after the resize, at the display size.
 # Sharpening a 6000px master that then gets downscaled to at most 2400px buys
 # halos rather than detail.
 [Sharpening]
@@ -84,7 +84,7 @@ Enabled=false
 [PostResizeSharpening]
 Enabled=false
 
-# Decision 0004 requires sRGB out.  This is already RawTherapee's default; it is
+# sRGB out, for the web.  This is already RawTherapee's default; it is
 # stated explicitly because the build depends on it and a silent default is a
 # bad thing to depend on.
 [Color Management]

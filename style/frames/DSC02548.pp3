@@ -1,0 +1,27 @@
+# DSC02548.pp3 --- per-frame override, layered over style/base.pp3.
+#
+# Translated from the Adobe Camera Raw sidecar
+#   ~/Documents/Photos/RAW/_from_lightroom/DSC02548.xmp
+# matched to raw/ by capture time. Sliders map one to one, as in base.pp3
+# (Highlights flips sign). Not carried over: 6 retouch spots; Whites +31 / Blacks -37 (base curve kept).
+
+[Exposure]
+Compensation=0.33
+Contrast=7
+Saturation=8
+
+[Shadows & Highlights]
+Highlights=39
+Shadows=65
+
+[Vibrance]
+Pastels=19
+
+[Crop]
+Enabled=true
+X=1257
+Y=0
+W=4759
+H=3309
+FixedRatio=false
+Guide=Frame
